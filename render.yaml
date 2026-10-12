@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: factuor
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2
+    # Pour garder les factures entre redéploiements : ajoutez un Disk monté sur /var/data
+    # puis la variable d'environnement DB_PATH=/var/data/factuor.db

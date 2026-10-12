@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FACTUOR - Ta facture pro en 30 secondes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{--bg:#0A0A0B;--card:#18181B;--bd:#27272A;--gold:#FFD700;--green:#00FF94;--tx:#FAFAFA;--mut:#A1A1AA}
+html,body{background:var(--bg);color:var(--tx);font-family:Inter,system-ui,sans-serif}
+.display{font-family:'Space Grotesk',sans-serif;font-weight:700}
+.mono{font-family:'JetBrains Mono',monospace}
+.enter{animation:enter .8s cubic-bezier(.16,1,.3,1) both}
+@keyframes enter{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:20px}
+.lbl{display:block;font-size:12px;font-weight:500;color:var(--mut);margin-bottom:6px}
+.inp{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--tx);outline:none;transition:border-color .2s}
+.inp::placeholder{color:#52525B}
+.inp:focus{border-color:var(--gold);animation:pulse 1.6s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,215,0,.4)}70%{box-shadow:0 0 0 7px rgba(255,215,0,0)}100%{box-shadow:0 0 0 0 rgba(255,215,0,0)}}
+.drop{border:1.5px dashed #3F3F46;border-radius:12px;padding:18px;text-align:center;cursor:pointer;transition:.2s;font-size:13px;color:var(--mut)}
+.drop:hover,.drop.over{border-color:var(--gold);background:rgba(255,215,0,.05);color:var(--tx)}
+.row-in{animation:rowin .45s cubic-bezier(.16,1,.3,1) both}
+@keyframes rowin{from{opacity:0;transform:translateY(-10px) scale(.97)}to{opacity:1;transform:none}}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border-radius:12px;padding:14px;font-weight:600;font-size:14px;transition:transform .2s,box-shadow .3s,background .2s;cursor:pointer}
+.btn-gold{background:var(--gold);color:#0A0A0B;font-family:'Space Grotesk';font-weight:700;letter-spacing:.03em}
+.btn-gold:hover{transform:scale(1.02);box-shadow:0 0 0 1px rgba(255,215,0,.5),0 8px 40px rgba(255,215,0,.35)}
+.btn-wa{background:transparent;border:1px solid var(--green);color:var(--green)}
+.btn-wa:hover{background:rgba(0,255,148,.1);box-shadow:0 0 30px rgba(0,255,148,.2)}
+.btn:disabled{opacity:.6;cursor:wait}
+.ghost{color:var(--mut);font-size:13px;border:1px dashed #3F3F46;border-radius:10px;padding:10px;width:100%;transition:.2s}
+.ghost:hover{color:var(--gold);border-color:var(--gold)}
+.x{color:#71717A;padding:6px;border-radius:8px;transition:.15s}.x:hover{color:#ff6b6b;background:rgba(255,80,80,.1)}
+/* Preview */
+#paperWrap{position:relative;width:100%;transform-origin:center 20%;transition:filter .3s}
+#paper{position:absolute;top:0;left:0;width:794px;min-height:1123px;transform-origin:top left;background:#fff;color:#0A0A0B;border-radius:4px;box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.06);display:flex;flex-direction:column}
+#paper *{transition:opacity .2s}
+.fold{animation:fold 1.3s cubic-bezier(.65,0,.35,1)}
+@keyframes fold{0%{transform:perspective(1400px) rotateX(0)}28%{transform:perspective(1400px) rotateX(-62deg) scaleY(.86);filter:brightness(.7)}52%{transform:perspective(1400px) rotateX(-62deg) rotateY(14deg) scale(.82)}100%{transform:perspective(1400px) rotateX(0) rotateY(0) scale(1);filter:none}}
+#toast{position:fixed;bottom:24px;left:50%;transform:translate(-50%,120px);background:var(--card);border:1px solid var(--bd);padding:12px 18px;border-radius:12px;font-size:14px;transition:transform .4s cubic-bezier(.16,1,.3,1);z-index:60}
+#toast.show{transform:translate(-50%,0)}
+canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:50}
+::-webkit-scrollbar{width:8px}::-webkit-scrollbar-thumb{background:#27272A;border-radius:8px}
+.pill{border:1px solid var(--bd);border-radius:99px;padding:7px 13px;font-size:13px;color:var(--mut);transition:.2s;background:transparent}
+.pill:hover{border-color:#52525B;color:var(--tx)}
+.pill.on{border-color:var(--gold);color:var(--gold);background:rgba(255,215,0,.08)}
+.pill.on.g{border-color:var(--green);color:var(--green);background:rgba(0,255,148,.08)}
+#sig{width:100%;height:130px;background:var(--bg);border:1px dashed #3F3F46;border-radius:12px;touch-action:none;cursor:crosshair;display:block}
+#sig:hover{border-color:var(--gold)}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;place-items:center;z-index:70;padding:16px}
+#modal.show{display:grid}
+.bar{position:sticky;bottom:0;background:linear-gradient(rgba(10,10,11,0),#0A0A0B 30%);padding-top:30px;z-index:5}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="fx"></canvas>
+<div id="toast"></div>
+
+<div class="lg:flex lg:h-screen">
+  <!-- FORMULAIRE -->
+  <section class="lg:w-1/2 lg:h-screen lg:overflow-y-auto p-5 md:p-8 border-r border-[#27272A]">
+    <div class="max-w-xl mx-auto space-y-4 enter">
+      <header class="pb-2">
+        <div class="flex items-center gap-3">
+          <svg width="34" height="34" viewBox="0 0 34 34"><path d="M4 30V13a9 9 0 0 1 9-9h18l-3 7H14v5h12l-3 7H14v7z" fill="#FFD700"/></svg>
+          <h1 class="display text-2xl tracking-wide" style="color:var(--gold)">FACTUOR</h1>
+        </div>
+        <div class="mt-3 flex items-center justify-between gap-3"><p class="text-[15px]" style="color:var(--mut)">Ta facture pro en 30 secondes. Avec QR et WhatsApp.</p><button id="histBtn" type="button" class="pill" style="flex:none">Historique</button></div>
+      </header>
+
+      <div class="card">
+        <h2 class="display text-base mb-4">Document</h2>
+        <div id="docTypes" class="flex flex-wrap gap-2 mb-4"></div>
+        <label class="lbl">Devise</label>
+        <select id="cur" class="inp"><option value="XOF">FCFA (XOF)</option><option value="EUR">Euro (EUR)</option><option value="USD">Dollar US (USD)</option><option value="MAD">Dirham marocain (MAD)</option><option value="GNF">Franc guinéen (GNF)</option></select>
+      </div>
+
+      <div class="card">
+        <h2 class="display text-base mb-4">Votre entreprise</h2>
+        <div id="drop" class="drop mb-4">
+          <input id="logoIn" type="file" accept="image/*" hidden>
+          <div id="dropTxt">Glissez votre logo ici ou <span style="color:var(--gold)">parcourez</span> (PNG, JPG)</div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="col-span-2"><label class="lbl">Nom de l'entreprise</label><input id="coName" class="inp" placeholder="Ex : Teranga Services SARL"></div>
+          <div><label class="lbl">Téléphone</label><input id="coPhone" class="inp" placeholder="77 123 45 67"></div>
+          <div><label class="lbl">NINEA</label><input id="coNinea" class="inp" placeholder="Optionnel"></div>
+          <div class="col-span-2"><label class="lbl">Adresse</label><input id="coAddr" class="inp" placeholder="Ex : Rue 10, Médina, Dakar"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="display text-base mb-4">Client</h2>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="col-span-2"><label class="lbl">Nom du client</label><input id="clName" class="inp" placeholder="Ex : Fatou Diop"></div>
+          <div><label class="lbl">WhatsApp</label><input id="clPhone" class="inp" placeholder="77 987 65 43"></div>
+          <div><label class="lbl">Adresse</label><input id="clAddr" class="inp" placeholder="Optionnel"></div>
+          <div><label class="lbl">Date</label><input id="date" type="date" class="inp"></div>
+          <div><label class="lbl">Échéance</label><input id="due" type="date" class="inp"></div>
+          <div class="col-span-2 flex gap-2"><button type="button" class="pill" data-due="7">+7 jours</button><button type="button" class="pill" data-due="15">+15 jours</button><button type="button" class="pill" data-due="30">+30 jours</button></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="display text-base mb-4">Articles</h2>
+        <div id="items" class="space-y-3"></div>
+        <button id="add" class="ghost mt-3">+ Ajouter un article</button>
+      </div>
+
+      <div class="card">
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div><label class="lbl">TVA (%)</label><input id="tva" type="number" min="0" max="100" value="18" class="inp mono"></div>
+          <div><label class="lbl">Remise</label><div class="flex gap-2"><input id="remise" type="number" min="0" value="0" class="inp mono"><select id="dtype" class="inp" style="width:88px"><option value="%">%</option><option value="fixe">Fixe</option></select></div></div>
+          <div class="col-span-2"><label class="lbl">Acompte déjà versé</label><input id="deposit" type="number" min="0" value="0" class="inp mono"></div>
+        </div>
+        <label class="lbl">Notes</label>
+        <textarea id="notes" rows="2" class="inp" placeholder="Ex : Paiement par Wave ou Orange Money au 77 123 45 67"></textarea>
+        <div class="flex items-end justify-between mt-5 pt-4 border-t border-[#27272A]">
+          <span class="text-sm" style="color:var(--mut)">Total à payer</span>
+          <span id="totalForm" class="mono text-2xl font-bold" style="color:var(--gold)">0 FCFA</span>
+        </div>
+        <div id="resteForm" class="text-right text-xs mt-1" style="color:var(--mut)"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="display text-base mb-4">Paiement</h2>
+        <label class="lbl">Statut (apposé en cachet sur le document)</label>
+        <div id="statuses" class="flex flex-wrap gap-2 mb-4"></div>
+        <label class="lbl">Mode de paiement</label>
+        <div id="methods" class="flex flex-wrap gap-2 mb-3"></div>
+        <input id="payInfo" class="inp" placeholder="Numéro ou RIB à afficher (ex : 77 123 45 67)">
+      </div>
+
+      <div class="card">
+        <h2 class="display text-base mb-1">Signature</h2>
+        <p class="text-xs mb-3" style="color:var(--mut)">Signez avec la souris ou le doigt.</p>
+        <canvas id="sig"></canvas>
+        <div class="flex gap-3 mt-3"><input id="signName" class="inp" placeholder="Nom du signataire (optionnel)"><button id="sigClr" type="button" class="ghost" style="width:auto;padding:10px 16px">Effacer</button></div>
+      </div>
+
+      <div class="bar space-y-3 pb-6">
+        <button id="gen" class="btn btn-gold magnetic">GÉNÉRER PDF FACTUOR</button>
+        <button id="wa" class="btn btn-wa">ENVOYER VIA WHATSAPP</button>
+        <div class="flex gap-2"><button id="copyLink" type="button" class="pill flex-1">Copier le lien de vérification</button><button id="newInv" type="button" class="pill flex-1">Nouveau document</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PREVIEW -->
+  <section class="lg:w-1/2 lg:h-screen lg:overflow-y-auto p-5 md:p-8 bg-[#0F0F11]">
+    <div class="max-w-[760px] mx-auto enter" style="animation-delay:.15s">
+      <div class="flex items-center justify-between mb-4 text-xs" style="color:var(--mut)">
+        <span class="flex items-center gap-2"><i class="inline-block w-2 h-2 rounded-full" style="background:var(--green)"></i> Aperçu en direct</span>
+        <span id="idTag" class="mono"></span>
+      </div>
+      <div id="paperWrap"><div id="paper"></div></div>
+    </div>
+  </section>
+</div>
+
+<div id="modal"><div class="card w-full max-w-lg max-h-[80vh] overflow-y-auto">
+  <div class="flex justify-between items-center mb-4"><h2 class="display text-lg">Historique</h2><button id="mClose" class="x" aria-label="Fermer">✕</button></div>
+  <div id="stats" class="grid grid-cols-2 gap-3 mb-4"></div>
+  <div id="histList" class="space-y-2"></div>
+</div></div>
+<script>
+const $ = s => document.querySelector(s);
+const PUBLIC_BASE = ''; // Ex : 'https://factuor.sn' une fois votre domaine branché. Vide = domaine actuel.
+const BASE = PUBLIC_BASE || location.origin;
+const CUR = { XOF: ['FCFA', 0], EUR: ['€', 2], USD: ['$', 2], MAD: ['MAD', 2], GNF: ['GNF', 0] };
+const fmt = (n, cur = S.cur) => { const [i, f] = (+n || 0).toFixed(CUR[cur][1]).split('.'); return i.replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0') + (f ? ',' + f : ''); };
+const money = (n, cur = S.cur) => fmt(n, cur) + '\u00a0' + CUR[cur][0];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const val = id => $('#' + id).value.trim();
+const rnd = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => b.toString(16).padStart(2,'0')).join('');
+const newId = () => { const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; return 'FCT-' + Array.from(crypto.getRandomValues(new Uint8Array(6)), b => a[b % a.length]).join(''); };
+
+const S = { id: newId(), token: rnd(16), logo: '', sig: '', dt: 'FACTURE', cur: 'XOF', st: '', pm: '', items: [{ d: '', q: 1, p: 0 }] };
+const verifyUrl = () => `${BASE}/verify/${S.id}`;
+
+/* ---------- Calculs ---------- */
+function calc() {
+  const sub = S.items.reduce((a, i) => a + (+i.q || 0) * (+i.p || 0), 0);
+  const tv = Math.min(+val('tva') || 0, 100), fixe = val('dtype') === 'fixe', rem = +val('remise') || 0;
+  const disc = fixe ? Math.min(rem, sub) : sub * Math.min(rem, 100) / 100, tvaAmt = (sub - disc) * tv / 100, total = sub - disc + tvaAmt;
+  const paid = S.st === 'PAYÉ' ? total : Math.min(+val('deposit') || 0, total);
+  return { sub, rem, fixe, tv, disc, tvaAmt, total, paid, reste: total - paid };
+}
+
+/* ---------- Articles (formulaire) ---------- */
+function renderItems(animateLast) {
+  $('#items').innerHTML = S.items.map((it, i) => `
+    <div class="${animateLast && i === S.items.length - 1 ? 'row-in' : ''} grid grid-cols-12 gap-2 items-center">
+      <input data-i="${i}" data-k="d" class="inp col-span-12 sm:col-span-6" placeholder="Description" value="${esc(it.d)}">
+      <input data-i="${i}" data-k="q" type="number" min="0" class="inp mono col-span-3 sm:col-span-2" placeholder="Qté" value="${it.q}">
+      <input data-i="${i}" data-k="p" type="number" min="0" class="inp mono col-span-6 sm:col-span-3" placeholder="Prix (${CUR[S.cur][0]})" value="${it.p || ''}">
+      <button data-del="${i}" class="x col-span-3 sm:col-span-1" aria-label="Supprimer">✕</button>
+    </div>`).join('');
+}
+$('#items').addEventListener('input', e => {
+  const t = e.target; if (t.dataset.i === undefined) return;
+  S.items[+t.dataset.i][t.dataset.k] = t.dataset.k === 'd' ? t.value : (+t.value || 0);
+  render();
+});
+$('#items').addEventListener('click', e => {
+  const b = e.target.closest('[data-del]'); if (!b) return;
+  S.items.splice(+b.dataset.del, 1);
+  if (!S.items.length) S.items.push({ d: '', q: 1, p: 0 });
+  renderItems(); render();
+});
+$('#add').onclick = () => { S.items.push({ d: '', q: 1, p: 0 }); renderItems(true); render(); $('#items').lastElementChild.querySelector('input').focus(); };
+
+/* ---------- Preview A4 ---------- */
+const fdate = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('fr-FR') : '';
+function render() {
+  const c = calc();
+  $('#totalForm').textContent = money(c.total);
+  $('#resteForm').textContent = c.paid > 0 ? `Déjà réglé : ${money(c.paid)}. Reste à payer : ${money(c.reste)}` : '';
+  $('#idTag').textContent = S.id;
+  const rows = S.items.filter(i => i.d || i.p).map((i, k) => `
+    <tr style="background:${k % 2 ? '#fff' : '#F4F4F5'}">
+      <td style="padding:12px 14px;font-size:13px">${esc(i.d) || '-'}</td>
+      <td class="mono" style="padding:12px 8px;text-align:right;font-size:13px">${+i.q || 0}</td>
+      <td class="mono" style="padding:12px 8px;text-align:right;font-size:13px">${fmt(i.p)}</td>
+      <td class="mono" style="padding:12px 14px;text-align:right;font-size:13px;font-weight:700">${fmt(i.q * i.p)}</td>
+    </tr>`).join('') || `<tr><td colspan="4" style="padding:28px;text-align:center;color:#A1A1AA;font-size:13px">Ajoutez votre premier article</td></tr>`;
+  const line = (l, v, strong) => `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:${strong ? '#0A0A0B' : '#6B7280'}"><span>${l}</span><span class="mono">${v}</span></div>`;
+  $('#paper').innerHTML = `
+    <div style="background:#0A0A0B;border-bottom:5px solid #FFD700;padding:36px 48px;display:flex;justify-content:space-between;align-items:center;min-height:150px">
+      <div>${S.logo ? `<img src="${S.logo}" style="max-height:76px;max-width:220px;object-fit:contain">` : `<div class="display" style="font-size:26px;color:#FFD700;letter-spacing:.04em">${esc(val('coName') || 'FACTUOR').toUpperCase()}</div>`}</div>
+      <div style="text-align:right;color:#fff;font-size:13px;line-height:1.7">
+        <div class="display" style="font-size:30px;color:#FFD700;letter-spacing:.06em">${S.dt}</div>
+        <div>N° ${S.id}</div><div>Date : ${fdate(val('date'))}</div>${val('due') ? `<div>Échéance : ${fdate(val('due'))}</div>` : ''}
+      </div>
+    </div>
+    <div style="padding:36px 48px 0;display:flex;gap:40px">
+      <div style="flex:1;font-size:13px;line-height:1.65"><div style="font-size:11px;font-weight:600;color:#6B7280;margin-bottom:6px">ÉMETTEUR</div>
+        <b style="font-size:15px">${esc(val('coName')) || '<span style="color:#A1A1AA">Votre entreprise</span>'}</b><br>${esc(val('coAddr'))}${val('coAddr') ? '<br>' : ''}${esc(val('coPhone'))}${val('coNinea') ? `<br>NINEA : ${esc(val('coNinea'))}` : ''}</div>
+      <div style="flex:1;font-size:13px;line-height:1.65"><div style="font-size:11px;font-weight:600;color:#6B7280;margin-bottom:6px">FACTURÉ À</div>
+        <b style="font-size:15px">${esc(val('clName')) || '<span style="color:#A1A1AA">Nom du client</span>'}</b><br>${esc(val('clAddr'))}${val('clAddr') ? '<br>' : ''}${esc(val('clPhone'))}</div>
+    </div>
+    <div style="padding:32px 48px 0">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:#0A0A0B;color:#FFD700;font-size:11px;letter-spacing:.06em">
+          <th style="padding:11px 14px;text-align:left">DESCRIPTION</th><th style="padding:11px 8px;text-align:right">QTÉ</th>
+          <th style="padding:11px 8px;text-align:right">PRIX UNIT.</th><th style="padding:11px 14px;text-align:right">TOTAL (${CUR[S.cur][0]})</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div style="position:relative;padding:20px 48px 0;display:flex;justify-content:flex-end">
+      ${S.st ? `<div id="stamp" style="position:absolute;left:62px;top:18px;transform:rotate(-14deg);border:5px solid ${STC[S.st]};color:${STC[S.st]};font:700 32px 'Space Grotesk',sans-serif;padding:6px 22px;border-radius:12px;opacity:.9;letter-spacing:.06em;white-space:nowrap">${S.st}</div>` : ''}
+      <div style="width:320px">
+        ${line('Sous-total', money(c.sub))}
+        ${c.rem ? line(c.fixe ? 'Remise' : `Remise (${c.rem}%)`, '- ' + money(c.disc)) : ''}
+        ${c.tv ? line(`TVA (${c.tv}%)`, money(c.tvaAmt)) : ''}
+        <div style="margin-top:10px;background:#0A0A0B;border-radius:10px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center">
+          <span style="color:#FFD700;font-size:12px;font-weight:600">TOTAL À PAYER</span>
+          <span class="mono" style="color:#FFD700;font-size:21px;font-weight:700">${money(c.total)}</span>
+        </div>
+        ${c.paid > 0 ? line(S.st === 'PAYÉ' ? 'Payé' : 'Acompte versé', '- ' + money(c.paid)) + line('Reste à payer', money(c.reste), true) : ''}
+      </div>
+    </div>
+    ${S.pm ? `<div style="padding:22px 48px 0;font-size:12px"><div style="font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px">PAIEMENT</div><b>${esc(S.pm)}</b>${val('payInfo') ? ' : ' + esc(val('payInfo')) : ''}</div>` : ''}
+    ${val('notes') ? `<div style="padding:24px 48px 0;font-size:12px;line-height:1.6"><div style="font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px">NOTES</div>${esc(val('notes')).replace(/\n/g, '<br>')}</div>` : ''}
+    <div style="margin-top:auto;padding:28px 48px 22px;display:flex;align-items:center;gap:18px">
+      <div id="qr" style="width:96px;height:96px;flex:none"></div>
+      <div style="font-size:12px;line-height:1.7;color:#6B7280"><b style="color:#0A0A0B;font-size:13px">Facture vérifiable</b><br>Facture vérifiable sur ${verifyUrl().replace(/^https?:\/\//, '')}<br>Scannez le QR code pour authentifier ce document.</div>
+      <div style="margin-left:auto;text-align:center;width:190px">${S.sig ? `<img src="${S.sig}" style="height:62px;margin:0 auto;display:block">` : '<div style="height:62px"></div>'}<div style="border-top:1px solid #0A0A0B;font-size:11px;color:#6B7280;padding-top:4px">Signature${val('signName') ? ' - ' + esc(val('signName')) : ''}</div></div>
+    </div>
+    <div style="background:#FFD700;text-align:center;padding:9px;font-size:11px;font-weight:700">Généré avec FACTUOR - Ta facture pro en 30 secondes</div>`;
+  new QRCode($('#qr'), { text: verifyUrl(), width: 96, height: 96, colorDark: '#0A0A0B', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+  fit(); saveDraft();
+}
+const STC = { 'PAYÉ': '#00A862', 'À CRÉDIT': '#E11D48', 'ACOMPTE': '#D97706', 'EN ATTENTE': '#6B7280', 'ANNULÉE': '#7F1D1D' };
+function fit() {
+  const wrap = $('#paperWrap'), p = $('#paper');
+  const s = Math.min(1, wrap.clientWidth / 794);
+  p.style.transform = `scale(${s})`;
+  wrap.style.height = p.offsetHeight * s + 'px';
+}
+addEventListener('resize', fit);
+document.querySelectorAll('input:not([data-i]):not([type=file]),textarea,select').forEach(el => el.addEventListener('input', render));
+
+/* ---------- Logo (drag & drop) ---------- */
+const drop = $('#drop'), logoIn = $('#logoIn');
+drop.onclick = () => logoIn.click();
+['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => loadLogo(e.dataTransfer.files[0]));
+logoIn.onchange = () => loadLogo(logoIn.files[0]);
+function loadLogo(f) {
+  if (!f || !f.type.startsWith('image/')) return toast('Choisissez une image (PNG ou JPG).');
+  const r = new FileReader();
+  r.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, 400 / Math.max(img.width, img.height)), cv = document.createElement('canvas');
+      cv.width = img.width * k; cv.height = img.height * k;
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      S.logo = cv.toDataURL('image/png');
+      $('#dropTxt').innerHTML = `<img src="${S.logo}" style="max-height:48px;margin:0 auto 6px"> Logo ajouté. Cliquez pour changer.`;
+      render();
+    };
+    img.src = r.result;
+  };
+  r.readAsDataURL(f);
+}
+
+/* ---------- Actions ---------- */
+function payload() {
+  return { id: S.id, token: S.token, base_url: BASE, logo: S.logo,
+    company: { name: val('coName'), address: val('coAddr'), phone: val('coPhone'), ninea: val('coNinea') },
+    client: { name: val('clName'), phone: val('clPhone'), address: val('clAddr') },
+    date: fdate(val('date')), due: fdate(val('due')), items: S.items, tva: val('tva'), remise: val('remise'), notes: val('notes'), doctype: S.dt, currency: S.cur, status: S.st, pay_method: S.pm, pay_info: val('payInfo'), deposit: val('deposit'), discount_type: val('dtype'), signature: S.sig, sign_name: val('signName') };
+}
+function valid() {
+  if (!val('clName')) { toast('Ajoutez le nom du client.'); $('#clName').focus(); return false; }
+  if (!S.items.some(i => i.p > 0)) { toast('Ajoutez un article avec un prix.'); return false; }
+  return true;
+}
+$('#gen').onclick = async function () {
+  if (!valid()) return;
+  if (location.protocol === 'file:') return toast('Ouvrez FACTUOR via le serveur (python app.py puis http://localhost:5000), pas en double-cliquant sur le fichier.');
+  const b = this; b.disabled = true; b.textContent = 'Génération en cours...';
+  try {
+    const r = await fetch('/generate-pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload()) });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || ('Erreur ' + r.status));
+    const url = URL.createObjectURL(await r.blob()), a = document.createElement('a');
+    a.href = url; a.download = `Facture-${S.id}.pdf`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 5000);
+    foldAnim(); confetti(); pushHist(); toast('PDF généré. ' + S.dt + ' ' + S.id + ' enregistré.');
+  } catch (e) { toast('Échec : ' + e.message); }
+  b.disabled = false; b.textContent = 'GÉNÉRER PDF FACTUOR';
+};
+$('#wa').onclick = () => {
+  if (!valid()) return;
+  fetch('/save-invoice', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload()), keepalive: true }).catch(() => {});
+  let ph = val('clPhone').replace(/\D/g, '').replace(/^00/, '');
+  if (ph.length === 9) ph = '221' + ph;
+  const cc = calc(), mm = v => money(v).replace(/\u00a0/g, ' ');
+  const msg = `Bonjour ${val('clName')}, voici votre ${S.dt.toLowerCase()} FACTUOR N°${S.id}. Montant : ${mm(cc.total)}.${cc.paid > 0 ? ` Reste à payer : ${mm(cc.reste)}.` : ''} Vérifiable ici : ${verifyUrl()}`;
+  window.open(`https://wa.me/${ph}?text=${encodeURIComponent(msg)}`, '_blank'); pushHist();
+};
+$('#newInv').onclick = () => {
+  if (!confirm('Commencer une nouvelle facture ? Les champs client et articles seront vidés.')) return;
+  S.id = newId(); S.token = rnd(16); S.items = [{ d: '', q: 1, p: 0 }];
+  S.st = ''; S.pm = ''; S.sig = ''; strokes = []; sx.clearRect(0, 0, sg.width, sg.height);
+  ['clName', 'clPhone', 'clAddr', 'due', 'notes', 'payInfo', 'signName'].forEach(i => $('#' + i).value = ''); $('#deposit').value = 0;
+  drawPills(); renderItems(); render();
+};
+
+/* ---------- Effets ---------- */
+function foldAnim() { const w = $('#paperWrap'); w.classList.remove('fold'); void w.offsetWidth; w.classList.add('fold'); }
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 3200); }
+document.querySelectorAll('.magnetic').forEach(b => {
+  b.addEventListener('mousemove', e => { const r = b.getBoundingClientRect(); b.style.transform = `translate(${(e.clientX - r.left - r.width / 2) * .2}px,${(e.clientY - r.top - r.height / 2) * .3}px) scale(1.02)`; });
+  b.addEventListener('mouseleave', () => b.style.transform = '');
+});
+function confetti() {
+  if (matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  const cv = $('#fx'), x = cv.getContext('2d'); cv.width = innerWidth; cv.height = innerHeight;
+  const cols = ['#FFD700', '#00FF94', '#FAFAFA', '#FFB800'];
+  const ps = Array.from({ length: 150 }, () => ({ x: innerWidth / 2, y: innerHeight * .65, vx: (Math.random() - .5) * 18, vy: -Math.random() * 18 - 4, s: Math.random() * 7 + 4, r: Math.random() * 6, vr: (Math.random() - .5) * .4, c: cols[Math.random() * 4 | 0] }));
+  let f = 0;
+  (function tick() {
+    x.clearRect(0, 0, cv.width, cv.height);
+    ps.forEach(p => { p.vy += .45; p.x += p.vx; p.y += p.vy; p.r += p.vr; x.save(); x.translate(p.x, p.y); x.rotate(p.r); x.fillStyle = p.c; x.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); x.restore(); });
+    if (++f < 160) requestAnimationFrame(tick); else x.clearRect(0, 0, cv.width, cv.height);
+  })();
+}
+
+/* ---------- Type, statut, paiement, signature, historique ---------- */
+const DT = ['FACTURE', 'DEVIS', 'REÇU', 'PROFORMA'], ST = ['PAYÉ', 'À CRÉDIT', 'ACOMPTE', 'EN ATTENTE', 'ANNULÉE'], PM = ['Wave', 'Orange Money', 'Free Money', 'Espèces', 'Virement', 'Chèque'];
+function drawPills() {
+  const mk = (id, list, key) => $('#' + id).innerHTML = list.map(v => `<button type="button" data-k="${key}" data-v="${v}" class="pill ${S[key] === v ? 'on' : ''} ${v === 'PAYÉ' ? 'g' : ''}">${v}</button>`).join('');
+  mk('docTypes', DT, 'dt'); mk('statuses', ST, 'st'); mk('methods', PM, 'pm');
+}
+function slam() { const s = $('#stamp'); if (s) s.animate([{ transform: 'rotate(-14deg) scale(2.4)', opacity: 0 }, { transform: 'rotate(-14deg) scale(1)', opacity: .9 }], { duration: 420, easing: 'cubic-bezier(.2,1.5,.4,1)' }); }
+document.addEventListener('click', e => {
+  const b = e.target.closest('.pill'); if (!b || (!b.dataset.k && !b.dataset.due)) return;
+  if (b.dataset.due) { const d = new Date(val('date') || Date.now()); d.setDate(d.getDate() + +b.dataset.due); $('#due').value = d.toISOString().slice(0, 10); return render(); }
+  const k = b.dataset.k; S[k] = (k !== 'dt' && S[k] === b.dataset.v) ? '' : b.dataset.v;
+  drawPills(); render(); if (k === 'st') slam();
+});
+$('#cur').addEventListener('input', () => { S.cur = $('#cur').value; renderItems(); render(); });
+
+const sg = $('#sig'), sx = sg.getContext('2d'); let strokes = [];
+const pos = e => { const r = sg.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+function paint(ctx, col, k) { ctx.lineCap = ctx.lineJoin = 'round'; ctx.lineWidth = 2.4 * k; ctx.strokeStyle = col; strokes.forEach(s => { ctx.beginPath(); s.forEach(([x, y], i) => i ? ctx.lineTo(x * k, y * k) : ctx.moveTo(x * k, y * k)); ctx.stroke(); }); }
+function exportSig() { if (!strokes.length) { S.sig = ''; return; } const o = document.createElement('canvas'); o.width = sg.width * 2; o.height = sg.height * 2; paint(o.getContext('2d'), '#0A0A0B', 2); S.sig = o.toDataURL('image/png'); }
+sg.addEventListener('pointerdown', e => { sg.setPointerCapture(e.pointerId); strokes.push([pos(e)]); });
+sg.addEventListener('pointermove', e => { if (!(e.buttons & 1) || !strokes.length) return; strokes.at(-1).push(pos(e)); sx.clearRect(0, 0, sg.width, sg.height); paint(sx, '#FAFAFA', 1); });
+sg.addEventListener('pointerup', () => { exportSig(); render(); });
+$('#sigClr').onclick = () => { strokes = []; sx.clearRect(0, 0, sg.width, sg.height); S.sig = ''; render(); };
+
+const FIELDS = ['coName', 'coPhone', 'coNinea', 'coAddr', 'clName', 'clPhone', 'clAddr', 'date', 'due', 'tva', 'remise', 'dtype', 'deposit', 'notes', 'payInfo', 'signName', 'cur'];
+function snap(full) {
+  const o = { f: {}, S: { id: S.id, token: S.token, items: S.items, dt: S.dt, cur: S.cur, st: S.st, pm: S.pm } };
+  FIELDS.forEach(k => o.f[k] = $('#' + k).value); if (full) o.logo = S.logo; return o;
+}
+function apply(o, dup) {
+  FIELDS.forEach(k => { if (o.f[k] !== undefined) $('#' + k).value = o.f[k]; });
+  Object.assign(S, o.S); if (o.logo !== undefined) S.logo = o.logo;
+  if (dup) { S.id = newId(); S.token = rnd(16); $('#date').value = new Date().toISOString().slice(0, 10); $('#due').value = ''; }
+  S.sig = ''; strokes = []; sx.clearRect(0, 0, sg.width, sg.height);
+  drawPills(); renderItems(); render();
+}
+let draftT; function saveDraft() { clearTimeout(draftT); draftT = setTimeout(() => { try { localStorage.setItem('fct_draft', JSON.stringify(snap(true))); } catch (e) {} }, 500); }
+const hist = () => { try { return JSON.parse(localStorage.getItem('fct_hist') || '[]'); } catch (e) { return []; } };
+function pushHist() {
+  const c = calc(), h = hist().filter(x => x.s.S.id !== S.id);
+  h.unshift({ cur: S.cur, total: c.total, paid: c.paid, reste: c.reste, st: S.st, dt: S.dt, cl: val('clName'), s: snap(false) });
+  try { localStorage.setItem('fct_hist', JSON.stringify(h.slice(0, 40))); } catch (e) {}
+}
+function showHist() {
+  const h = hist(), by = {};
+  h.forEach(x => { if (x.st === 'ANNULÉE' || x.dt === 'DEVIS') return; const b = by[x.cur] ||= { paid: 0, reste: 0 }; b.paid += x.paid; b.reste += x.reste; });
+  const st = (l, v, col) => `<div class="card" style="padding:12px"><div class="text-xs" style="color:var(--mut)">${l}</div><div class="mono font-bold" style="color:${col}">${v}</div></div>`;
+  $('#stats').innerHTML = Object.entries(by).map(([c, b]) => st('Encaissé', money(b.paid, c), 'var(--green)') + st('À encaisser', money(b.reste, c), 'var(--gold)')).join('');
+  $('#histList').innerHTML = h.map((x, i) => `<div class="card flex items-center gap-2" style="padding:12px"><div class="flex-1 min-w-0"><div class="text-sm font-semibold truncate">${esc(x.cl) || 'Sans nom'} <span class="mono text-xs" style="color:var(--mut)">${x.s.S.id}</span></div><div class="text-xs" style="color:var(--mut)">${x.dt} - ${x.st || 'sans statut'} - ${money(x.total, x.cur)}</div></div><button class="pill" data-open="${i}">Ouvrir</button><button class="pill" data-dup="${i}">Dupliquer</button></div>`).join('')
+    || `<p class="text-sm" style="color:var(--mut)">Aucun document pour l'instant. Générez un PDF ou envoyez sur WhatsApp : il sera enregistré ici.</p>`;
+  $('#modal').classList.add('show');
+}
+$('#histBtn').onclick = showHist; $('#mClose').onclick = () => $('#modal').classList.remove('show');
+$('#modal').addEventListener('click', e => {
+  if (e.target.id === 'modal') return $('#modal').classList.remove('show');
+  const b = e.target.closest('[data-open],[data-dup]'); if (!b) return;
+  const i = b.dataset.open ?? b.dataset.dup; apply(hist()[i].s, b.dataset.dup !== undefined); $('#modal').classList.remove('show');
+});
+$('#copyLink').onclick = () => {
+  if (!valid()) return;
+  fetch('/save-invoice', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload()) }).catch(() => {});
+  navigator.clipboard.writeText(verifyUrl()).then(() => toast('Lien de vérification copié.'), () => toast(verifyUrl()));
+  pushHist();
+};
+
+/* ---------- Init ---------- */
+$('#date').value = new Date().toISOString().slice(0, 10);
+sg.width = sg.clientWidth; sg.height = 130;
+drawPills();
+try { const d = JSON.parse(localStorage.getItem('fct_draft') || 'null'); if (d) { apply(d); if (S.logo) $('#dropTxt').innerHTML = `<img src="${S.logo}" style="max-height:48px;margin:0 auto 6px"> Logo ajouté. Cliquez pour changer.`; } } catch (e) {}
+$('#cur').value = S.cur;
+renderItems(); render();
+</script>
+</body>
+</html>
